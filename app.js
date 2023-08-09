@@ -12,6 +12,11 @@ const { requestLogger, errorLogger } = require('./middlewares/logger');
 const errorHandler = require('./middlewares/errorHandler');
 const routes = require('./routes/index');
 
+if (process.env.NODE_ENV !== 'production') {
+  // eslint-disable-next-line no-console
+  console.log('Режим разработки!');
+}
+
 const { PORT = 3000, MONGO_URL = 'mongodb://127.0.0.1:27017/bitfilmsdb' } = process.env;
 
 const app = express();
