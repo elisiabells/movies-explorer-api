@@ -14,7 +14,11 @@ exports.getCurrentUser = async (req, res, next) => {
     }
     res.status(200).send(user);
   } catch (error) {
-    next(new NotFound('Ошибка при поиске пользователя'));
+    if (error instanceof NotFound) {
+      next(error);
+    } else {
+      next(new NotFound('Ошибка при поиске пользователя'));
+    }
   }
 };
 
@@ -29,7 +33,11 @@ exports.updateUser = async (req, res, next) => {
     }
     res.status(200).send(user);
   } catch (error) {
-    next(new BadRequest('Ошибка при обновлении данных пользователя'));
+    if (error instanceof NotFound) {
+      next(error);
+    } else {
+      next(new BadRequest('Ошибка при обновлении данных пользователя'));
+    }
   }
 };
 
@@ -51,7 +59,9 @@ exports.signup = async (req, res, next) => {
       name: user.name,
     });
   } catch (error) {
-    if (error.name === 'MongoError' && error.code === 11000) {
+    if (error instanceof BadRequest) {
+      next(error);
+    } else if (error.name === 'MongoError' && error.code === 11000) {
       next(new BadRequest('Пользователь с таким email уже существует'));
     } else {
       next(new BadRequest('Ошибка при регистрации пользователя'));

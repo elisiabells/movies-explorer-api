@@ -9,7 +9,11 @@ exports.getMovies = async (req, res, next) => {
     const movies = await Movie.find({ owner: req.user._id });
     res.status(200).send(movies);
   } catch (error) {
-    next(new NotFound('Фильмы не найдены'));
+    if (error instanceof NotFound) {
+      next(error);
+    } else {
+      next(new NotFound('Фильмы не найдены'));
+    }
   }
 };
 
@@ -47,12 +51,14 @@ exports.createMovie = async (req, res, next) => {
 
     res.status(201).send(movie);
   } catch (error) {
-    if (error.name === 'MongoError' && error.code === 11000) {
+    if (error instanceof NotFound || error instanceof BadRequest || error instanceof NotUnique) {
+      next(error);
+    } else if (error.name === 'MongoError' && error.code === 11000) {
       next(new NotUnique('Такой фильм уже существует'));
     } else if (error.name === 'ValidationError') {
       next(new BadRequest('Ошибка валидации данных'));
     } else {
-      next(error);
+      next(new BadRequest('Неизвестная ошибка'));
     }
   }
 };
@@ -68,10 +74,12 @@ exports.deleteMovie = async (req, res, next) => {
 
     res.status(200).send({ message: 'Фильм успешно удален' });
   } catch (error) {
-    if (error.name === 'CastError') {
+    if (error instanceof NotFound) {
+      next(error);
+    } else if (error.name === 'CastError') {
       next(new BadRequest('Неверный формат ID'));
     } else {
-      next(error);
+      next(new BadRequest('Неизвестная ошибка'));
     }
   }
 };
