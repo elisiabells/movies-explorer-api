@@ -53,10 +53,14 @@ exports.signup = async (req, res, next) => {
       name,
     });
 
+    const JWT_SECRET = process.env.JWT_SECRET || 'some-default-secret';
+    const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
+
     res.status(201).send({
       _id: user._id,
       email: user.email,
       name: user.name,
+      token,
     });
   } catch (error) {
     // eslint-disable-next-line no-console
@@ -88,8 +92,6 @@ exports.signin = async (req, res, next) => {
 
     const JWT_SECRET = process.env.JWT_SECRET || 'some-default-secret';
     const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
-
-    // res.cookie('jwt', token, { httpOnly: true, sameSite: 'strict' }).send({ token });
     res.send({ token });
   } catch (error) {
     if (error instanceof ErrorAccess) {
