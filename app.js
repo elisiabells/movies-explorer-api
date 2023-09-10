@@ -21,7 +21,7 @@ const { PORT = 3000, MONGO_URL = 'mongodb://127.0.0.1:27017/bitfilmsdb' } = proc
 
 const app = express();
 app.use(cors({
-  origin: true, // Разрешаем все источники или заменить на адрес фронта
+  origin: 'https://moviesbyelisiabells.nomoreparties.co',
   methods: 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
   allowedHeaders: 'Origin, X-Requested-With, Content-Type, Accept, Authorization',
   credentials: true,
