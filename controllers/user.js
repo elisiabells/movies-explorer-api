@@ -59,6 +59,8 @@ exports.signup = async (req, res, next) => {
       name: user.name,
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Ошибка при регистрации:', error);
     if (error instanceof BadRequest) {
       next(error);
     } else if (error.name === 'MongoError' && error.code === 11000) {
@@ -87,7 +89,8 @@ exports.signin = async (req, res, next) => {
     const JWT_SECRET = process.env.JWT_SECRET || 'some-default-secret';
     const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
 
-    res.cookie('jwt', token, { httpOnly: true, sameSite: 'strict' }).send({ token });
+    // res.cookie('jwt', token, { httpOnly: true, sameSite: 'strict' }).send({ token });
+    res.send({ token });
   } catch (error) {
     if (error instanceof ErrorAccess) {
       next(error);
@@ -95,9 +98,4 @@ exports.signin = async (req, res, next) => {
       next(new BadRequest('Ошибка при входе пользователя'));
     }
   }
-};
-
-// Выход пользователя и удаление JWT из кук
-exports.signout = (req, res) => {
-  res.clearCookie('jwt').send({ message: 'Выход успешно выполнен' });
 };
