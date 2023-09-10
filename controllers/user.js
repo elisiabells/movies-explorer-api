@@ -33,10 +33,10 @@ exports.updateUser = async (req, res, next) => {
     }
     res.status(200).send(user);
   } catch (error) {
-    if (error instanceof NotFound) {
-      next(error);
+    if (error.name === 'MongoError' && error.code === 11000) {
+      next(new BadRequest('Пользователь с таким email уже существует'));
     } else {
-      next(new BadRequest('Ошибка при обновлении данных пользователя'));
+      next(new BadRequest('При обновлении профиля произошла ошибка'));
     }
   }
 };
@@ -63,14 +63,10 @@ exports.signup = async (req, res, next) => {
       token,
     });
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Ошибка при регистрации:', error);
-    if (error instanceof BadRequest) {
-      next(error);
-    } else if (error.name === 'MongoError' && error.code === 11000) {
+    if (error.name === 'MongoError' && error.code === 11000) {
       next(new BadRequest('Пользователь с таким email уже существует'));
     } else {
-      next(new BadRequest('Ошибка при регистрации пользователя'));
+      next(new BadRequest('При регистрации пользователя произошла ошибка'));
     }
   }
 };
@@ -81,13 +77,8 @@ exports.signin = async (req, res, next) => {
 
   try {
     const user = await User.findOne({ email }).select('+password');
-    if (!user) {
-      throw new ErrorAccess('Неправильные почта или пароль');
-    }
-
-    const isMatched = await bcrypt.compare(password, user.password);
-    if (!isMatched) {
-      throw new ErrorAccess('Неправильные почта или пароль');
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      throw new ErrorAccess('Вы ввели неправильный логин или пароль.');
     }
 
     const JWT_SECRET = process.env.JWT_SECRET || 'some-default-secret';
@@ -96,6 +87,10 @@ exports.signin = async (req, res, next) => {
   } catch (error) {
     if (error instanceof ErrorAccess) {
       next(error);
+    } else if (error instanceof jwt.JsonWebTokenError) {
+      next(new ErrorAccess('При авторизации произошла ошибка. Токен не передан или передан не в том формате.'));
+    } else if (error instanceof jwt.TokenExpiredError) {
+      next(new ErrorAccess('При авторизации произошла ошибка. Переданный токен некорректен.'));
     } else {
       next(new BadRequest('Ошибка при входе пользователя'));
     }
