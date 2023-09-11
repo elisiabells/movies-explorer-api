@@ -33,10 +33,12 @@ exports.updateUser = async (req, res, next) => {
     }
     res.status(200).send(user);
   } catch (error) {
-    if (error instanceof NotFound) {
-      next(error);
+    // eslint-disable-next-line no-console
+    console.error(error); // Это временный лог ошибки
+    if (error.name === 'MongoServerError' && error.code === 11000) {
+      next(new BadRequest('Пользователь с таким email уже существует'));
     } else {
-      next(new BadRequest('Ошибка при обновлении данных пользователя'));
+      next(new BadRequest('При обновлении профиля произошла ошибка'));
     }
   }
 };
@@ -53,24 +55,18 @@ exports.signup = async (req, res, next) => {
       name,
     });
 
-    const JWT_SECRET = process.env.JWT_SECRET || 'some-default-secret';
-    const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
-
     res.status(201).send({
       _id: user._id,
       email: user.email,
       name: user.name,
-      token,
     });
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error('Ошибка при регистрации:', error);
-    if (error instanceof BadRequest) {
-      next(error);
-    } else if (error.name === 'MongoError' && error.code === 11000) {
+    console.error(error); // Это временный лог ошибки
+    if (error.name === 'MongoServerError' && error.code === 11000) {
       next(new BadRequest('Пользователь с таким email уже существует'));
     } else {
-      next(new BadRequest('Ошибка при регистрации пользователя'));
+      next(new BadRequest('При регистрации профиля произошла ошибка'));
     }
   }
 };
@@ -81,21 +77,22 @@ exports.signin = async (req, res, next) => {
 
   try {
     const user = await User.findOne({ email }).select('+password');
-    if (!user) {
-      throw new ErrorAccess('Неправильные почта или пароль');
-    }
-
-    const isMatched = await bcrypt.compare(password, user.password);
-    if (!isMatched) {
-      throw new ErrorAccess('Неправильные почта или пароль');
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      throw new ErrorAccess('Вы ввели неправильный логин или пароль.');
     }
 
     const JWT_SECRET = process.env.JWT_SECRET || 'some-default-secret';
     const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
     res.send({ token });
   } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error(error); // Это временный лог ошибки
     if (error instanceof ErrorAccess) {
       next(error);
+    } else if (error instanceof jwt.JsonWebTokenError) {
+      next(new ErrorAccess('При авторизации произошла ошибка. Токен не передан или передан не в том формате.'));
+    } else if (error instanceof jwt.TokenExpiredError) {
+      next(new ErrorAccess('При авторизации произошла ошибка. Переданный токен некорректен.'));
     } else {
       next(new BadRequest('Ошибка при входе пользователя'));
     }
