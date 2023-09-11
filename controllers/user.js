@@ -33,7 +33,9 @@ exports.updateUser = async (req, res, next) => {
     }
     res.status(200).send(user);
   } catch (error) {
-    if (error.name === 'MongoError' && error.code === 11000) {
+    // eslint-disable-next-line no-console
+    console.error(error); // Это временный лог ошибки
+    if (error.name === 'MongoServerError' && error.code === 11000) {
       next(new BadRequest('Пользователь с таким email уже существует'));
     } else {
       next(new BadRequest('При обновлении профиля произошла ошибка'));
@@ -53,20 +55,18 @@ exports.signup = async (req, res, next) => {
       name,
     });
 
-    const JWT_SECRET = process.env.JWT_SECRET || 'some-default-secret';
-    const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
-
     res.status(201).send({
       _id: user._id,
       email: user.email,
       name: user.name,
-      token,
     });
   } catch (error) {
-    if (error.name === 'MongoError' && error.code === 11000) {
+    // eslint-disable-next-line no-console
+    console.error(error); // Это временный лог ошибки
+    if (error.name === 'MongoServerError' && error.code === 11000) {
       next(new BadRequest('Пользователь с таким email уже существует'));
     } else {
-      next(new BadRequest('При регистрации пользователя произошла ошибка'));
+      next(new BadRequest('При регистрации профиля произошла ошибка'));
     }
   }
 };
@@ -85,6 +85,8 @@ exports.signin = async (req, res, next) => {
     const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
     res.send({ token });
   } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error(error); // Это временный лог ошибки
     if (error instanceof ErrorAccess) {
       next(error);
     } else if (error instanceof jwt.JsonWebTokenError) {

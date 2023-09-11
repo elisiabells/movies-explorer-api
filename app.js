@@ -20,12 +20,7 @@ if (process.env.NODE_ENV !== 'production') {
 const { PORT = 3000, MONGO_URL = 'mongodb://127.0.0.1:27017/bitfilmsdb' } = process.env;
 
 const app = express();
-app.use(cors({
-  origin: 'https://moviesbyelisiabells.nomoreparties.co',
-  methods: 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
-  allowedHeaders: 'Origin, X-Requested-With, Content-Type, Accept, Authorization',
-  credentials: true,
-}));
+app.use(cors());
 
 mongoose.connect(MONGO_URL, {
   useNewUrlParser: true,
